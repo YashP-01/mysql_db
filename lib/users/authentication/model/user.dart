@@ -17,5 +17,4 @@ class User{
         'user_email': user_email,
         'user_password': user_password,
       };
-
 }

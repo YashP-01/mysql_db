@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mysql_db/users/authentication/login_screen.dart';
 import 'package:mysql_db/users/authentication/signup_screen.dart';
+import 'package:device_preview/device_preview.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MyApp());
+  runApp(
+     const MyApp()
+  );
 }
 
 class MyApp extends StatelessWidget {

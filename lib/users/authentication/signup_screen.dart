@@ -1,11 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:mysql_db/api_connection/api_connection.dart';
 import 'package:mysql_db/users/authentication/login_screen.dart';
 import 'package:http/http.dart' as http;
 import 'package:fluttertoast/fluttertoast.dart';
-
-import 'model/user.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -16,6 +13,8 @@ class SignupScreen extends StatefulWidget {
 
 class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
+
+  bool _isObscured = true;
 
   // TextEditingController for each TextFormField
   final TextEditingController _nameController = TextEditingController();
@@ -28,7 +27,7 @@ class _SignupScreenState extends State<SignupScreen> {
     try
     {
       var res = await http.post(
-        Uri.parse(API.validateEmail),
+        Uri.parse("http://192.168.3.76/mysql_db_app/user/validate_email.php"),
         body: {
           'user_email': _emailController.text.trim(),
         }
@@ -40,7 +39,7 @@ class _SignupScreenState extends State<SignupScreen> {
           Fluttertoast.showToast(msg: 'email is already exist, Try another email.');
         } else {
           /// register and save new user record to the database.
-          registerAndSaveUserRecord();
+          // registerAndSaveUserRecord();
         }
       }
     }
@@ -49,77 +48,83 @@ class _SignupScreenState extends State<SignupScreen> {
       Fluttertoast.showToast(msg: e.toString());
     }
   }
-  registerAndSaveUserRecord() async{
-    User userModel = User(
-      1,
-      _nameController.text.trim(),
-      _emailController.text.trim(),
-      _passwordController.text.trim()
-    );
 
-    try
-    {
+
+  registerAndSaveUserRecord() async {
+    try {
       var res = await http.post(
-        Uri.parse(API.signUp),
-        body: userModel.toJson(),
+        Uri.parse("http://192.168.3.76:8000/mysql_db_app/user/signup.php"),
+        headers: {
+          'Content-Type': 'application/json',  // Set the Content-Type to JSON
+        },
+        body: jsonEncode({
+          'user_name': _nameController.text.trim(),
+          'user_email': _emailController.text.trim(),
+          'user_password': _passwordController.text.trim(),
+        }),
       );
 
-      if(res.statusCode == 200){
+      if (res.statusCode == 200) {
+        print("Response code is 200");
+        print("Response body: ${res.body}");
+
         var resBodyOfSignUp = jsonDecode(res.body);
-        if(resBodyOfSignUp['success'] == true){
-          Fluttertoast.showToast(msg: 'Congratulations, Signup successfully');
+
+        print("response is: $resBodyOfSignUp");
+
+        if (resBodyOfSignUp['success'] == true) {
+          Fluttertoast.showToast(msg: 'Congratulations, Signup successful');
+        } else {
+          Fluttertoast.showToast(msg: 'Error occurred, Try again');
         }
-        else{
-          Fluttertoast.showToast(msg: 'Error Occurred, Try again');
-        }
+      } else {
+        print("Error: Server returned status code ${res.statusCode}");
       }
-    }
-    catch(e)
-    {
-      print(e.toString());
+    } catch (e) {
+      print('Error: $e');
       Fluttertoast.showToast(msg: e.toString());
     }
   }
 
-  // Password validation function
-  // String? _validatePassword(String? value) {
-  //   if (value == null || value.isEmpty) {
-  //     return 'Please enter a password';
-  //   }
-  //   if (value.length < 6) {
-  //     return 'Password must be at least 6 characters';
-  //   }
-  //   if (!RegExp(r'\d').hasMatch(value)) {
-  //     return 'Password must contain at least one number';
-  //   }
-  //   if (!RegExp(r'[A-Z]').hasMatch(value)) {
-  //     return 'Password must contain at least one uppercase letter';
-  //   }
-  //   if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
-  //     return 'Password must contain at least one special character';
-  //   }
-  //   return null;
-  // }
-  //
-  // bool isValidUsername(String username) {
-  //   final usernameRegex = RegExp(r'^[a-zA-Z._]+$');
-  //   return usernameRegex.hasMatch(username);
-  // }
 
-  // bool isValidEmail(String email) {
-  //   // Regular expression for validating email
-  //   final emailRegex = RegExp(
-  //     r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
-  //   );
-  //   return emailRegex.hasMatch(email);
-  // }
+
+  // Password validation function
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please enter a password';
+    }
+    if (value.length < 6) {
+      return 'Password must be at least 6 characters';
+    }
+    if (!RegExp(r'\d').hasMatch(value)) {
+      return 'Password must contain at least one number';
+    }
+    if (!RegExp(r'[A-Z]').hasMatch(value)) {
+      return 'Password must contain at least one uppercase letter';
+    }
+    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
+      return 'Password must contain at least one special character';
+    }
+    return null;
+  }
+
+  bool isValidUsername(String username) {
+    final usernameRegex = RegExp(r'^[a-zA-Z._]+$');
+    return usernameRegex.hasMatch(username);
+  }
+
+  bool isValidEmail(String email) {
+    // Regular expression for validating email
+    final emailRegex = RegExp(
+      r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
+    );
+    return emailRegex.hasMatch(email);
+  }
+
 
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery
-        .of(context)
-        .size
-        .width;
+    double screenWidth = MediaQuery.of(context).size.width;
 
     EdgeInsetsGeometry padding = screenWidth > 600
         ? EdgeInsets.symmetric(horizontal: 100)
@@ -181,21 +186,21 @@ class _SignupScreenState extends State<SignupScreen> {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.emailAddress,
-                        // validator: (value) {
-                        //   if (value == null || value.isEmpty) {
-                        //     return 'Please enter an email address';
-                        //   } else if (!isValidEmail(value)) {
-                        //     return 'Invalid email address';
-                        //   }
-                        //   return null;
-                        // },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter an email address';
+                          } else if (!isValidEmail(value)) {
+                            return 'Invalid email address';
+                          }
+                          return null;
+                        },
                       ),
                       SizedBox(height: 20),
 
                       /// password
                       TextFormField(
                         controller: _passwordController,
-                        obscureText: true,
+                        obscureText: _isObscured,
                         decoration: InputDecoration(
                           prefixIcon: const Icon(
                             Icons.vpn_key_sharp,
@@ -203,23 +208,37 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                           labelText: 'Password',
                           border: OutlineInputBorder(),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _isObscured ? Icons.visibility_off : Icons.visibility,
+                              ),
+                              onPressed: (){
+                                setState(() {
+                                  _isObscured = !_isObscured;
+                                });
+                              },
+                            )
                         ),
-                        // validator: _validatePassword,
+                        validator: _validatePassword,
                       ),
                       SizedBox(height: 20),
 
                       ElevatedButton(
                         onPressed: () {
-
                           if(_formKey.currentState!.validate()){
-
                             /// validate the email
                             validateUserEmail();
+                            registerAndSaveUserRecord();
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => LoginScreen()));
+                          }
+                          else{
+                            Fluttertoast.showToast(msg: 'something went wrong!');
                           }
                         },
+
                         child: Text('Sign Up'),
                         style: ElevatedButton.styleFrom(
-                          minimumSize: Size(screenWidth * 0.8, 50),
+                          minimumSize: Size(screenWidth * 0.8, 53),
                         ),
                       ),
                       SizedBox(height: 20),
