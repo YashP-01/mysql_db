@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:mysql_db/users/authentication/login_screen.dart';
 import 'package:http/http.dart' as http;
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:mysql_db/users/authentication/model/user.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -143,7 +144,7 @@ class _SignupScreenState extends State<SignupScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  Icons.account_circle,
+                  Icons.account_circle,         /// add new avtar for profile icon here...
                   size: screenWidth * 0.3,
                   color: Colors.lightBlue,
                 ),

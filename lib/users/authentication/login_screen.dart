@@ -1,5 +1,14 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:mysql_db/users/authentication/fragments/dashboard_of_fragments.dart';
 import 'package:mysql_db/users/authentication/signup_screen.dart';
+import 'package:http/http.dart' as http;
+import 'package:mysql_db/users/authentication/userPreferences/user_preferences.dart';
+
+import 'model/user.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -16,6 +25,51 @@ class _LoginScreenState extends State<LoginScreen> {
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+
+  loginUserNow() async {
+    try
+    {
+      var res = await http.post(
+          Uri.parse("http://192.168.3.76:8000/mysql_db_app/user/login.php"),
+          body: {
+            'user_email': _emailController.text.trim(),
+            'user_password': _passwordController.text.trim()
+          }
+      );
+      if(res.statusCode == 200){
+        var resBodyOfLogin = jsonDecode(res.body);
+
+        if(resBodyOfLogin['success'] == false){               /// make changes here for login user.
+          Fluttertoast.showToast(msg: 'Logged in Successfully');
+
+          Navigator.push(context, MaterialPageRoute(builder: (context) => DashboardOfFragments()));
+
+          User userInfo = User.fromJson(resBodyOfLogin["userData"]);
+
+          /// save userIngo to local storage using shared preference.
+          await RememberUserPref.storeUserInfo(userInfo);
+
+        } else {
+          /// register and save new user record to the database.
+          Fluttertoast.showToast(msg: 'Incorrect Credentials.\nPlease write correct email or password and Try again.');
+        }
+      }
+    }
+
+    catch(errorMsg)
+    {
+      print("Error ::"+ errorMsg.toString());
+    }
+  }
+
+  bool isValidEmail(String email) {
+    // Regular expression for validating email
+    final emailRegex = RegExp(
+      r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
+    );
+    return emailRegex.hasMatch(email);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +107,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         /// email
                         TextFormField(
-                          validator: (val) => val == "" ? "Please enter the email" : null,
                           controller: _emailController,
                           decoration: InputDecoration(
                             prefixIcon: const Icon(
@@ -63,14 +116,15 @@ class _LoginScreenState extends State<LoginScreen> {
                               labelText: 'Email',
                               border: OutlineInputBorder()
                           ),
-                          // validator: (value) {
-                          //   if (value == null || value.isEmpty) {
-                          //     return 'Please enter an email address';
-                          //   } else if (!isValidEmail(value)) {
-                          //     return 'Invalid email address';
-                          //   }
-                          //   return null;
-                          // },
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter an email address';
+                            } else if (!isValidEmail(value)) {
+                              return 'Invalid email address';
+                            }
+                            return null;
+                          },
                         ),
                         SizedBox(height: 20),
 
@@ -119,36 +173,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         ElevatedButton(
                           onPressed: () async {
-                            // auth service
-                            // final _auth = AuthService();
-                            // if (_formKey.currentState?.validate() ?? false) {
-                            //   ScaffoldMessenger.of(context).showSnackBar(
-                            //     SnackBar(content: Text('Signing in...')),
-                            //   );
-                            //   Navigator.push(
-                            //     context,
-                            //     MaterialPageRoute(builder: (context) => HomePage()),
-                            //   );
-                            // } else {
-                            //   ScaffoldMessenger.of(context).showSnackBar(
-                            //       SnackBar(content: Text('Please fill all the fields correctly.'))
-                            //   );
-                            // }
-                            //
-                            // // try login
-                            // try {
-                            //   await _auth.signInWithEmailPassword(_emailController.text, _passwordController.text);
-                            // }
-                            //
-                            // // catch any errors
-                            // catch (e) {
-                            //   showDialog(
-                            //     context: context,
-                            //     builder: (context) => AlertDialog(
-                            //       title: Text(e.toString()),
-                            //     ),
-                            //   );
-                            // }
+
+                            if(_formKey.currentState!.validate()){
+                              loginUserNow();
+                              // Navigator.push(context, MaterialPageRoute(builder: (context) => DashboardOfFragments()));
+                            }
+                            else
+                              {
+                                Fluttertoast.showToast(msg: "something went wrong, Try again later.");
+                              }
                           },
                           child: Text('Log in'),
                           style: ElevatedButton.styleFrom(
@@ -181,3 +214,38 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+
+
+
+
+
+// auth service
+// final _auth = AuthService();
+// if (_formKey.currentState?.validate() ?? false) {
+//   ScaffoldMessenger.of(context).showSnackBar(
+//     SnackBar(content: Text('Signing in...')),
+//   );
+//   Navigator.push(
+//     context,
+//     MaterialPageRoute(builder: (context) => HomePage()),
+//   );
+// } else {
+//   ScaffoldMessenger.of(context).showSnackBar(
+//       SnackBar(content: Text('Please fill all the fields correctly.'))
+//   );
+// }
+//
+// // try login
+// try {
+//   await _auth.signInWithEmailPassword(_emailController.text, _passwordController.text);
+// }
+//
+// // catch any errors
+// catch (e) {
+//   showDialog(
+//     context: context,
+//     builder: (context) => AlertDialog(
+//       title: Text(e.toString()),
+//     ),
+//   );
+// }
