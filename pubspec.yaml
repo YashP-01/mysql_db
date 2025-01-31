@@ -39,6 +39,10 @@ dependencies:
   fluttertoast: ^8.2.10
   device_preview: ^1.2.0
   shared_preferences: ^2.4.0
+  animated_splash_screen:
+  another_flutter_splash_screen: ^1.2.1
+  font_awesome_flutter: ^10.8.0
+  expandable: ^5.0.1
 
 dev_dependencies:
   flutter_test:
